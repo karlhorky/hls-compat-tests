@@ -1,6 +1,10 @@
 # HLS Compatibility Tests
 
-> Test native browser HLS compatibility via streams synced from [the HLS.js demo](https://hlsjs.video-dev.org/demo/)
+> Test native browser HLS compatibility via streams synced from HLS.js demo streams
+
+[HLS Compatibility Tests](https://hls-compat-tests.vercel.app/)
+
+<img width="2880" height="1718" alt="Screenshot 2026-05-09 at 22 51 38" src="https://github.com/user-attachments/assets/584a8036-0d54-43ec-a00a-6f1bb6379c7f" />
 
 Native HLS compatibility varies across browsers. Compatibility problems can show up with eg. streams using gzip-encoded `.m3u8` playlists ([Chromium issue 507987650](https://issues.chromium.org/issues/507987650)), audio-only streams, alternate audio, subtitles, captions, and live or low-latency streams.
 
@@ -22,8 +26,6 @@ http://localhost:8000/?src=https%3A%2F%2Ftest-streams.mux.dev%2Fx36xhzz%2Fx36xhz
 
 ## Stream definitions
 
-The stream list is based on HLS.js `tests/test-streams.js`:
-
-https://github.com/video-dev/hls.js/blob/master/tests/test-streams.js
+The stream list is based on HLS.js [`tests/test-streams.js`](https://github.com/video-dev/hls.js/blob/master/tests/test-streams.js), from [the HLS.js demo](https://hlsjs.video-dev.org/demo/).
 
 Run the manual [`Sync HLS.js stream definitions`](.github/workflows/sync-streams.yml) GitHub Actions workflow to refresh the generated stream records from upstream.
