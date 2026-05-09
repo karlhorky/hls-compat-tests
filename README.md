@@ -4,7 +4,7 @@
 
 [HLS Compatibility Tests](https://hls-compat-tests.vercel.app/)
 
-<img width="2880" height="1718" alt="Screenshot 2026-05-09 at 22 51 38" src="https://github.com/user-attachments/assets/584a8036-0d54-43ec-a00a-6f1bb6379c7f" />
+<img width="2880" height="1718" alt="Screenshot of HLS Compatibility Tests website, showing Chrome failing to load a stream with the error 'code 4'" src="https://github.com/user-attachments/assets/584a8036-0d54-43ec-a00a-6f1bb6379c7f" />
 
 Native HLS compatibility varies across browsers. Compatibility problems can show up with eg. streams using gzip-encoded `.m3u8` playlists ([Chromium issue 507987650](https://issues.chromium.org/issues/507987650)), audio-only streams, alternate audio, subtitles, captions, and live or low-latency streams.
 
