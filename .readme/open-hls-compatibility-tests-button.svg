@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="64" viewBox="0 0 360 64" role="img" aria-labelledby="title desc">
-  <title id="title">Open HLS Compatibility Tests</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="56" viewBox="0 0 320 56" role="img" aria-labelledby="title desc">
+  <title id="title">HLS Compatibility Tests</title>
   <desc id="desc">Call-to-action button linking to the HLS Compatibility Tests website.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
@@ -7,11 +7,7 @@
       <stop offset="100%" stop-color="#1b4fd6"/>
     </linearGradient>
   </defs>
-  <rect width="360" height="64" rx="10" fill="url(#bg)"/>
-  <rect x="5" y="5" width="350" height="54" rx="7" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
-  <text x="22" y="40" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#ffffff">Open HLS Compatibility Tests</text>
-  <g transform="translate(326 32)" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M-12 0H8"/>
-    <path d="M0-8L8 0L0 8"/>
-  </g>
+  <rect width="320" height="56" rx="9" fill="url(#bg)"/>
+  <rect x="5" y="5" width="310" height="46" rx="6" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+  <text x="28" y="35" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#ffffff">HLS Compatibility Tests</text>
 </svg>
