@@ -2,7 +2,11 @@
 
 > Test native browser HLS compatibility via streams synced from HLS.js demo streams
 
-[![Open HLS Compatibility Tests](.readme/open-hls-compatibility-tests-button.svg)](https://hls-compat-tests.vercel.app/)
+<p align="center">
+  <a href="https://hls-compat-tests.vercel.app/">
+    <img src="./.readme/open-hls-compatibility-tests-button.svg" alt="Open HLS Compatibility Tests" width="360" />
+  </a>
+</p>
 
 <img width="2880" height="1718" alt="Screenshot of HLS Compatibility Tests website, showing Chrome failing to load a stream with the error 'code 4'" src="https://github.com/user-attachments/assets/584a8036-0d54-43ec-a00a-6f1bb6379c7f" />
 
