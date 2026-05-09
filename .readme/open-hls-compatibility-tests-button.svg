@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="320" height="56" viewBox="0 0 320 56" role="img" aria-labelledby="title desc">
-  <title id="title">HLS Compatibility Tests</title>
+  <title id="title">View HLS Compatibility Tests</title>
   <desc id="desc">Call-to-action button linking to the HLS Compatibility Tests website.</desc>
   <defs>
     <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
@@ -9,5 +9,5 @@
   </defs>
   <rect width="320" height="56" rx="9" fill="url(#bg)"/>
   <rect x="5" y="5" width="310" height="46" rx="6" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
-  <text x="28" y="35" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#ffffff">HLS Compatibility Tests</text>
+  <text x="160" y="28" dominant-baseline="central" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#ffffff">View HLS Compatibility Tests</text>
 </svg>
