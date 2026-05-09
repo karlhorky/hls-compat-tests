@@ -116,8 +116,8 @@
       <h1>Native HLS compatibility tests</h1>
 
       <p>
-        This page tests native browser HLS behavior, using [the HLS.js demo
-        streams](https://hlsjs.video-dev.org/demo/).
+        This page tests native browser HLS behavior, using
+        <a href="https://hlsjs.video-dev.org/demo/">the HLS.js demo streams</a>.
       </p>
       <p>
         Native HLS compatibility varies across browsers. Compatibility problems
@@ -418,11 +418,7 @@
         },
         {
           label: 'Alternate audio',
-          keys: [
-            'altAudioWithPdtAndStartGap',
-            'muxedFmp4',
-            'fmp4Bitmovin',
-          ],
+          keys: ['altAudioWithPdtAndStartGap', 'muxedFmp4', 'fmp4Bitmovin'],
         },
         {
           label: 'Subtitles / captions',
@@ -545,22 +541,24 @@
         load(urlInput.value);
       });
 
-      document.querySelector('#copy-link').addEventListener('click', async (event) => {
-        const nextUrl = new URL(window.location.href);
-        nextUrl.searchParams.set('src', urlInput.value);
-        currentShareUrl = nextUrl.href;
-        history.pushState(null, '', nextUrl);
+      document
+        .querySelector('#copy-link')
+        .addEventListener('click', async (event) => {
+          const nextUrl = new URL(window.location.href);
+          nextUrl.searchParams.set('src', urlInput.value);
+          currentShareUrl = nextUrl.href;
+          history.pushState(null, '', nextUrl);
 
-        try {
-          await navigator.clipboard.writeText(currentShareUrl);
-          event.target.textContent = 'Copied';
-          window.setTimeout(() => {
-            event.target.textContent = 'Copy link to this stream';
-          }, 1400);
-        } catch {
-          window.prompt('Copy link to this stream', currentShareUrl);
-        }
-      });
+          try {
+            await navigator.clipboard.writeText(currentShareUrl);
+            event.target.textContent = 'Copied';
+            window.setTimeout(() => {
+              event.target.textContent = 'Copy link to this stream';
+            }, 1400);
+          } catch {
+            window.prompt('Copy link to this stream', currentShareUrl);
+          }
+        });
 
       load(
         new URL(window.location.href).searchParams.get('src') ||
