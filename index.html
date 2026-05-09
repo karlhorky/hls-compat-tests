@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,
+    initial-scale=1"
+    />
+    <title>Native HLS compatibility tests</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg
+    xmlns='http://www.w3.org/2000/svg'/%3E"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        line-height: 1.5;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+      }
+
+      main {
+        max-width: 960px;
+      }
+
+      h1,
+      h2 {
+        line-height: 1.2;
+      }
+
+      video {
+        background: #111;
+        display: block;
+        margin-block: 20px;
+        max-height: 54vh;
+        width: 100%;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-block-start: 16px;
+      }
+
+      input,
+      select,
+      button {
+        font: inherit;
+      }
+
+      select,
+      input[type='url'] {
+        box-sizing: border-box;
+        margin-block-start: 6px;
+        width: 100%;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-block-start: 10px;
+      }
+
+      dl {
+        display: grid;
+        gap: 6px 16px;
+        grid-template-columns: max-content 1fr;
+      }
+
+      dt {
+        font-weight: 600;
+      }
+
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+
+      pre {
+        border: 1px solid CanvasText;
+        max-height: 240px;
+        overflow: auto;
+        padding: 12px;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 700px) {
+        body {
+          padding: 16px;
+        }
+
+        dl {
+          display: block;
+        }
+
+        dd {
+          margin-block-end: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Native HLS compatibility tests</h1>
+
+      <p>
+        This page tests native browser HLS behavior, using [the HLS.js demo
+        streams](https://hlsjs.video-dev.org/demo/).
+      </p>
+      <p>
+        Native HLS compatibility varies across browsers. Compatibility problems
+        can show up with eg. streams using gzip-encoded
+        <code>.m3u8</code> playlists (<a
+          href="https://issues.chromium.org/issues/507987650"
+          >Chromium issue 507987650</a
+        >), audio-only, alternate audio, subtitles, captions, and live or
+        low-latency streams.
+      </p>
+
+      <video id="video" controls playsinline></video>
+
+      <form id="loader">
+        <label for="stream-select">Demo stream</label>
+        <select id="stream-select"></select>
+
+        <label for="stream-url">Stream URL</label>
+        <input id="stream-url" name="src" type="url" required />
+
+        <div class="actions">
+          <button type="submit">Load</button>
+          <button id="copy-link" type="button">Copy link to this stream</button>
+        </div>
+      </form>
+
+      <section aria-labelledby="debug-heading">
+        <h2 id="debug-heading">Debug output</h2>
+        <dl>
+          <dt><code>application/vnd.apple.mpegurl</code></dt>
+          <dd id="can-play-vnd"></dd>
+          <dt><code>application/x-mpegURL</code></dt>
+          <dd id="can-play-x"></dd>
+          <dt>Selected URL</dt>
+          <dd id="selected-url"></dd>
+          <dt>Video error</dt>
+          <dd id="video-error"></dd>
+        </dl>
+        <h3>Media events</h3>
+        <pre id="event-log" aria-live="polite"></pre>
+      </section>
+    </main>
+
+    <script type="module">
+      const streamDefinitions = [
+        // STREAM_DEFINITIONS_START
+        {
+          key: 'bbb',
+          description: 'Big Buck Bunny - adaptive qualities',
+          url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+          abr: true,
+        },
+        {
+          key: 'fdr',
+          description: 'FDR - CDN packaged, 4s segments, 180p - 1080p',
+          url: 'https://cdn.jwplayer.com/manifests/pZxWPRg4.m3u8',
+          abr: true,
+        },
+        {
+          key: 'bigBuckBunny480p',
+          description: 'Big Buck Bunny - 480p only',
+          url: 'https://test-streams.mux.dev/x36xhzz/url_6/193039199_mp4_h264_aac_hq_7.m3u8',
+          abr: false,
+        },
+        {
+          key: 'arte',
+          description: 'ARTE China,ABR',
+          url: 'https://test-streams.mux.dev/test_001/stream.m3u8',
+          abr: true,
+        },
+        {
+          key: 'deltatreDAI',
+          description: 'Ad-insertion in event stream',
+          url: 'https://test-streams.mux.dev/dai-discontinuity-deltatre/manifest.m3u8',
+          abr: false,
+        },
+        {
+          key: 'issue666',
+          description:
+            'Surveillance footage - https://github.com/video-dev/hls.js/issues/666',
+          url: 'https://playertest.longtailvideo.com/adaptive/issue666/playlists/cisq0gim60007xzvi505emlxx.m3u8',
+          abr: false,
+        },
+        {
+          key: 'closedCaptions',
+          description: 'CNN special report, with CC',
+          url: 'https://playertest.longtailvideo.com/adaptive/captions/playlist.m3u8',
+          abr: false,
+        },
+        {
+          key: 'customIvBadDts',
+          description: 'Custom IV with bad PTS DTS',
+          url: 'https://playertest.longtailvideo.com/adaptive/customIV/prog_index.m3u8',
+          abr: false,
+        },
+        {
+          key: 'oceansAES',
+          description: 'AES-128 encrypted, ABR',
+          url: 'https://playertest.longtailvideo.com/adaptive/oceans_aes/oceans_aes.m3u8',
+          abr: true,
+        },
+        {
+          key: 'tracksWithAES',
+          description: 'AES-128 encrypted, TS main with AAC audio track',
+          url: 'https://playertest.longtailvideo.com/adaptive/aes-with-tracks/master.m3u8',
+          abr: false,
+        },
+        {
+          key: 'mp3Audio',
+          description: 'MP3 VOD demo',
+          url: 'https://playertest.longtailvideo.com/adaptive/vod-with-mp3/manifest.m3u8',
+          abr: false,
+        },
+        {
+          key: 'mpegAudioOnly',
+          description: 'MPEG Audio Only demo',
+          url: 'https://pl.streamingvideoprovider.com/mp3-playlist/playlist.m3u8',
+          abr: false,
+        },
+        {
+          key: 'fmp4',
+          description: 'HLS fMP4 Angel-One multiple audio-tracks',
+          url: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8',
+          abr: true,
+        },
+        {
+          key: 'fmp4Bitmovin',
+          description: 'HLS fMP4 by Bitmovin',
+          url: 'https://bitdash-a.akamaihd.net/content/MI201109210084_1/m3u8s-fmp4/f08e80da-bf1d-4e3d-8899-f0f6155f6efa.m3u8',
+          abr: true,
+        },
+        {
+          key: 'fmp4BitmovinHevc',
+          description:
+            'HLS HEVC fMP4 by Bitmovin (Safari and Edge? only as of 2020-08)',
+          url: 'https://bitmovin-a.akamaihd.net/content/dataset/multi-codec/hevc/stream_fmp4.m3u8',
+          abr: true,
+        },
+        {
+          key: 'offset_pts',
+          description: 'DK Turntable, PTS shifted by 2.3s',
+          url: 'https://test-streams.mux.dev/pts_shift/master.m3u8',
+          abr: true,
+        },
+        {
+          key: 'angelOneShakaWidevine',
+          description:
+            'Shaka-packager Widevine DRM (EME) HLS-fMP4 - Angel One Demo',
+          url: 'https://storage.googleapis.com/shaka-demo-assets/angel-one-widevine-hls/hls.m3u8',
+          abr: true,
+        },
+        {
+          key: 'audioOnlyMultipleLevels',
+          description: 'Multiple non-alternate audio levels',
+          url: 'https://s3.amazonaws.com/qa.jwplayer.com/~alex/121628/new_master.m3u8',
+          abr: true,
+        },
+        {
+          key: 'pdtDuplicate',
+          description: 'Duplicate sequential PDT values',
+          url: 'https://playertest.longtailvideo.com/adaptive/artbeats/manifest.m3u8',
+          abr: false,
+        },
+        {
+          key: 'pdtLargeGap',
+          description: 'PDTs with large gaps following discontinuities',
+          url: 'https://playertest.longtailvideo.com/adaptive/boxee/playlist.m3u8',
+          abr: false,
+        },
+        {
+          key: 'pdtBadValues',
+          description: 'PDTs with bad values',
+          url: 'https://playertest.longtailvideo.com/adaptive/progdatime/playlist2.m3u8',
+          abr: false,
+        },
+        {
+          key: 'pdtOneValue',
+          description: 'One PDT, no discontinuities',
+          url: 'https://playertest.longtailvideo.com/adaptive/aviion/manifest.m3u8',
+          abr: false,
+        },
+        {
+          key: 'noTrackIntersection',
+          description:
+            'Audio/video track PTS values do not intersect; 10 second start gap',
+          url: 'https://s3.amazonaws.com/qa.jwplayer.com/~alex/123633/new_master.m3u8',
+          abr: false,
+        },
+        {
+          key: 'altAudioAndTracks',
+          description: 'Alternate audio tracks, and multiple VTT tracks',
+          url: 'https://playertest.longtailvideo.com/adaptive/elephants_dream_v4/index.m3u8',
+          abr: true,
+        },
+        {
+          key: 'altAudioAudioOnly',
+          description: 'Audio only with alternate audio track (Sintel)',
+          url: 'https://playertest.longtailvideo.com/adaptive/alt-audio-no-video/sintel/playlist.m3u8',
+          abr: false,
+        },
+        {
+          key: 'altAudioMultiAudioOnly',
+          description:
+            'Audio only with multiple alternate audio tracks (Angel One)',
+          url: 'https://playertest.longtailvideo.com/adaptive/alt-audio-no-video/angel-one.m3u8',
+          abr: false,
+        },
+        {
+          key: 'muxedFmp4',
+          description: 'Muxed av fmp4 - appended to "audiovideo" SourceBuffer',
+          url: 'https://s3.amazonaws.com/qa.jwplayer.com/hlsjs/muxed-fmp4/hls.m3u8',
+          abr: false,
+        },
+        {
+          key: 'altAudioWithPdtAndStartGap',
+          description: 'PDT before each segment, 1.59s start gap',
+          url: 'https://playertest.longtailvideo.com/adaptive/hls-test-streams/test-audio-pdt/playlist.m3u8',
+        },
+        {
+          key: 'AppleAdvancedHevcAvcHls',
+          description:
+            'Advanced stream (HEVC/H.264, AC-3/AAC,  WebVTT, fMP4 segments)',
+          url: 'https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_adv_example_hevc/master.m3u8',
+        },
+        {
+          key: 'MuxLowLatencyHls',
+          description:
+            'Low-Latency HLS sample of Big Buck Bunny loop and a timer. Restarts every 12 hours. (fMP4 segments)',
+          url: 'https://stream.mux.com/v69RSHhFelSm4701snP22dYz2jICy4E4FUyk02rW4gxRM.m3u8',
+          live: true,
+        },
+        {
+          key: 'groupIds',
+          description: 'Group-id: subtitle and audio',
+          url: 'https://mtoczko.github.io/hls-test-streams/test-group/playlist.m3u8',
+          abr: true,
+        },
+        {
+          key: 'redundantLevelsWithTrackGroups',
+          description: 'Redundant levels with subtitle and audio track groups',
+          url: 'https://playertest.longtailvideo.com/adaptive/elephants_dream_v4/redundant.m3u8',
+          abr: true,
+        },
+        {
+          key: 'startDelimiterOverlappingBetweenPESPackets',
+          description:
+            'A stream with the start delimiter overlapping between PES packets.\n       Related to https://github.com/video-dev/hls.js/issues/3834, where Apple Silicon chips throw decoding errors if\n       NAL units are not starting right at the beginning of the PES packet when using hardware accelerated decoding.',
+          url: 'https://wistia.github.io/hlsjs-test-streams/assets/start-delimiter.m3u8',
+          abr: false,
+        },
+        {
+          key: 'aes256',
+          description: 'aes-256 and aes-256-ctr full segment encryption',
+          url: 'https://jvaryhlstests.blob.core.windows.net/hlstestdata/playlist_encrypted.m3u8',
+          abr: false,
+        },
+        {
+          key: 'mpegTsHevcHls',
+          description: 'Advanced stream (HEVC Main 10, MPEG-TS segments)',
+          url: 'https://devoldemar.github.io/streams/hls/bipbop/hevc.m3u8',
+        },
+        {
+          key: 'mpegTsBitmovinHevc',
+          description:
+            'HLS M2TS by Bitmovin (HEVC Main, many NALUs overflowing PESes, video only)',
+          url: 'https://bitmovin-a.akamaihd.net/content/dataset/multi-codec/hevc/v720p_ts.m3u8',
+          abr: false,
+        },
+        // STREAM_DEFINITIONS_END
+      ];
+
+      const groups = [
+        {
+          label: 'Complex video + audio',
+          keys: [
+            'altAudioAndTracks',
+            'fmp4',
+            'AppleAdvancedHevcAvcHls',
+            'noTrackIntersection',
+            'tracksWithAES',
+            'groupIds',
+            'redundantLevelsWithTrackGroups',
+            'fmp4BitmovinHevc',
+            'mpegTsHevcHls',
+            'startDelimiterOverlappingBetweenPESPackets',
+            'aes256',
+            'angelOneShakaWidevine',
+          ],
+        },
+        {
+          label: 'Audio-only',
+          keys: [
+            'audioOnlyMultipleLevels',
+            'mpegAudioOnly',
+            'altAudioAudioOnly',
+            'altAudioMultiAudioOnly',
+          ],
+        },
+        {
+          label: 'Alternate audio',
+          keys: [
+            'altAudioWithPdtAndStartGap',
+            'muxedFmp4',
+            'fmp4Bitmovin',
+          ],
+        },
+        {
+          label: 'Subtitles / captions',
+          keys: ['closedCaptions'],
+        },
+        {
+          label: 'Live / low-latency',
+          keys: ['MuxLowLatencyHls'],
+        },
+        {
+          label: 'Basic',
+          keys: [
+            'bbb',
+            'fdr',
+            'bigBuckBunny480p',
+            'arte',
+            'deltatreDAI',
+            'issue666',
+            'customIvBadDts',
+            'oceansAES',
+            'mp3Audio',
+            'offset_pts',
+            'pdtDuplicate',
+            'pdtLargeGap',
+            'pdtBadValues',
+            'pdtOneValue',
+            'mpegTsBitmovinHevc',
+          ],
+        },
+      ];
+
+      const video = document.querySelector('#video');
+      const select = document.querySelector('#stream-select');
+      const urlInput = document.querySelector('#stream-url');
+      const selectedUrl = document.querySelector('#selected-url');
+      const videoError = document.querySelector('#video-error');
+      const eventLogOutput = document.querySelector('#event-log');
+      const streams = new Map(
+        streamDefinitions.map((stream) => [stream.key, stream]),
+      );
+      const streamByUrl = new Map(
+        streamDefinitions.map((stream) => [stream.url, stream]),
+      );
+      const eventLog = [];
+      let currentShareUrl;
+
+      document.querySelector('#can-play-vnd').textContent =
+        video.canPlayType('application/vnd.apple.mpegurl') || '(empty string)';
+      document.querySelector('#can-play-x').textContent =
+        video.canPlayType('application/x-mpegURL') || '(empty string)';
+
+      for (const group of groups) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = group.label;
+
+        for (const key of group.keys) {
+          const stream = streams.get(key);
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = `${group.label}: ${stream.description}`;
+          optgroup.append(option);
+        }
+
+        select.append(optgroup);
+      }
+
+      function load(url, replace = false) {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set('src', url);
+        currentShareUrl = nextUrl.href;
+        history[replace ? 'replaceState' : 'pushState'](null, '', nextUrl);
+        urlInput.value = url;
+        select.value = streamByUrl.get(url)?.key || '';
+        selectedUrl.textContent = url;
+        videoError.textContent = 'None';
+        eventLogOutput.textContent = '';
+        eventLog.length = 0;
+        video.src = url;
+        video.load();
+      }
+
+      for (const eventName of [
+        'loadstart',
+        'loadedmetadata',
+        'canplay',
+        'playing',
+        'waiting',
+        'stalled',
+        'error',
+        'ended',
+      ]) {
+        video.addEventListener(eventName, (event) => {
+          const errorText = video.error
+            ? [`code ${video.error.code}`, video.error.message]
+                .filter(Boolean)
+                .join(': ')
+            : 'None';
+
+          eventLog.unshift(
+            [
+              `${new Date().toLocaleTimeString()} ${event.type}`,
+              `readyState=${video.readyState}`,
+              `networkState=${video.networkState}`,
+              event.type === 'error' ? `error=${errorText}` : '',
+            ]
+              .filter(Boolean)
+              .join(' '),
+          );
+          eventLogOutput.textContent = eventLog.slice(0, 80).join('\n');
+          videoError.textContent = errorText;
+        });
+      }
+
+      select.addEventListener('change', () => {
+        load(streams.get(select.value).url);
+      });
+
+      document.querySelector('#loader').addEventListener('submit', (event) => {
+        event.preventDefault();
+        load(urlInput.value);
+      });
+
+      document.querySelector('#copy-link').addEventListener('click', async (event) => {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set('src', urlInput.value);
+        currentShareUrl = nextUrl.href;
+        history.pushState(null, '', nextUrl);
+
+        try {
+          await navigator.clipboard.writeText(currentShareUrl);
+          event.target.textContent = 'Copied';
+          window.setTimeout(() => {
+            event.target.textContent = 'Copy link to this stream';
+          }, 1400);
+        } catch {
+          window.prompt('Copy link to this stream', currentShareUrl);
+        }
+      });
+
+      load(
+        new URL(window.location.href).searchParams.get('src') ||
+          streams.get(groups[0].keys[0]).url,
+        true,
+      );
+    </script>
+  </body>
+</html>

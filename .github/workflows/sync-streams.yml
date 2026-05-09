@@ -1,0 +1,94 @@
+name: Sync HLS.js stream definitions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 26
+
+      - name: Update HLS.js stream definitions
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from "node:fs/promises"
+          import vm from "node:vm"
+
+          const sourceUrl =
+            "https://raw.githubusercontent.com/video-dev/hls.js/master/tests/test-streams.js"
+          const response = await fetch(sourceUrl)
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${sourceUrl}: ${response.status}`)
+          }
+
+          const context = {}
+          const source = (await response.text()).replace(
+            /\b\w+\.exports\s*=/,
+            "globalThis.streams =",
+          )
+
+          vm.runInNewContext(source, context, {
+            filename: "test-streams.js",
+          })
+
+          const streamDefinitions = Object.entries(context.streams).map(
+            ([key, stream]) => {
+              const definition = {
+                key,
+                description: stream.description,
+                url: stream.url,
+              }
+
+              if ("abr" in stream) {
+                definition.abr = stream.abr
+              }
+
+              if (stream.live) {
+                definition.live = stream.live
+              }
+
+              return definition
+            },
+          )
+
+          const block = streamDefinitions
+            .map((stream) =>
+              JSON.stringify(stream, null, 2).replace(/^/gm, "        "),
+            )
+            .join(",\n")
+          const htmlPath = "index.html"
+          const html = await readFile(htmlPath, "utf8")
+          const updated = html.replace(
+            /        \/\/ STREAM_DEFINITIONS_START[\s\S]*?        \/\/ STREAM_DEFINITIONS_END/,
+            `        // STREAM_DEFINITIONS_START\n${block},\n        // STREAM_DEFINITIONS_END`,
+          )
+
+          if (updated === html) {
+            throw new Error("Stream definition markers were not found")
+          }
+
+          await writeFile(htmlPath, updated)
+          NODE
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet index.html; then
+            echo "No stream definition changes"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Sync HLS.js stream definitions"
+          git push
